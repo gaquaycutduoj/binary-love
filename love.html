@@ -141,9 +141,13 @@
 // Prepare binary from content
 (function(){
   const content = `Anh thích em!
+  
 Tụi mình đừng vội đặt tên cho thứ này, cứ để mọi thứ chậm rãi mà thật nhé. 
+
 Anh tin, nếu hai tần số chạm nhau đủ đúng thì giống như mã nhị phân - một bật, một tắt, nhưng luôn song hành đến vô tận. 
+
 Anh không hứa gì xa đâu, chỉ muốn cùng em đi qua từng biến số nhỏ của cuộc đời, giống như cách những con số tìm thấy quy luật của riêng chúng. 
+
 Cô bé đặc biệt trong lòng anh, cảm ơn em vì đã tồn tại trong hệ phương trình của anh.`.trim();
   const bytes = new TextEncoder().encode(content);
   const bits = Array.from(bytes, b => b.toString(2).padStart(8,'0'));
