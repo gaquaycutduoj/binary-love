@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Binary Love · v6 Final</title>
+<style>
+  :root{
+    --fg:#eaf2f1; --bg:#000; --acc:#49e4d9; --muted:#9aa3af;
+    --wrap-w: min(740px, 92vw);
+  }
+  html,body{height:100%;margin:0;background:var(--bg)}
+  body{
+    color:var(--fg);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Courier New", monospace;
+    -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
+    overflow-x:hidden; overflow-y:auto;
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) calc(env(safe-area-inset-bottom) + 64px) env(safe-area-inset-left);
+  }
+  #matrix{ position:fixed; inset:0; z-index:0; opacity:.33; pointer-events:none; }
+  .container{ position:relative; z-index:1; width: var(--wrap-w); margin: 28px auto 32px; }
+
+  .caption{ color:var(--acc); margin: 8px 0 8px; font-size:14px; }
+  .bin{ color:var(--muted); font-size: clamp(12px, 1.7vw, 14px); white-space: pre-wrap; word-break: break-word; }
+  .actions{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin:12px 0 18px; }
+  .btn{ background: rgba(255,255,255,.06); color:#fff; border: 1px solid rgba(255,255,255,.18); padding: 10px 14px; border-radius: 12px; font-size: 14px; cursor:pointer; backdrop-filter: blur(6px); -webkit-tap-highlight-color: transparent; }
+  .btn.small{ padding: 8px 12px; font-size: 13px; border-radius:10px; }
+  .btn:hover{ background: rgba(255,255,255,.12); }
+  .links a{ color: var(--acc); text-decoration:none; border-bottom:1px dashed var(--acc); font-size:13px; }
+
+  .divider{ height:1px; width:100%; background:linear-gradient(90deg, transparent, var(--acc), transparent); margin: 18px 0; opacity:.6; }
+
+  .text{ white-space: pre-wrap; line-height:1.7; letter-spacing:.1px; font-size: clamp(17px, 2.2vw, 21px); text-align:left; min-height:12lh; }
+  .typeCaret{ display:inline-block; width:.6ch; height:1.1em; margin-left:2px; background: var(--acc); vertical-align:-.15em; animation: blink 1s steps(2,start) infinite; }
+  @keyframes blink{ 50%{opacity:0} }
+
+  .videoWrap{ width:100%; margin: 22px 0 0; border-radius:16px; overflow:hidden; box-shadow:0 8px 30px rgba(0,0,0,.35); opacity:0; transform:translateY(10px); }
+  .videoWrap.show{ animation: fadeIn .6s ease forwards; }
+  @keyframes fadeIn{ to{ opacity:1; transform:translateY(0); } }
+  .videoWrap .tapOverlay{
+    position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    background: rgba(0,0,0,.25); color:#fff; font-size:15px; letter-spacing:.2px;
+    opacity:0; pointer-events:none; transition: opacity .4s ease;
+  }
+  .videoWrap.blocked .tapOverlay{ opacity:1; pointer-events:auto; }
+  .videoWrap video{ display:block; width:100%; height:auto; -webkit-user-drag:none; user-select:none; background:#000; }
+
+  .controls{ position:fixed; right:14px; bottom:14px; z-index:10; display:flex; gap:8px; flex-wrap:wrap; }
+
+  @media (max-width:430px){
+    :root{ --wrap-w: 92vw; }
+    .container{ margin: 20px auto 26px; }
+    .text{ font-size:17px; line-height:1.66; }
+    .bin{ font-size:12.5px; }
+    .videoWrap{ border-radius:14px; }
+  }
+</style>
+</head>
+<body>
+<canvas id="matrix"></canvas>
+
+<div class="container">
+  <!-- 1) UTF-8 binary first -->
+  <div class="caption">UTF-8 binary</div>
+  <div id="binary" class="bin"></div>
+
+  <div class="actions">
+    <button class="btn" id="decodeBtn">🔓 Giải mã</button>
+    <button class="btn small" id="copyBin">📋 Copy Binary</button>
+    <span class="links">Decode quickly at:
+      <a href="https://onlinetexttools.com/convert-binary-to-text" target="_blank" rel="noopener">Onlinetexttools</a> ·
+      <a href="https://cryptii.com/pipes/binary-decoder" target="_blank" rel="noopener">Cryptii</a> ·
+      <a href="https://www.rapidtables.com/convert/number/binary-to-ascii.html" target="_blank" rel="noopener">RapidTables</a>
+    </span>
+  </div>
+
+  <div class="divider" aria-hidden="true"></div>
+
+  <!-- 2) Decoded Unicode via typewriter -->
+  <div id="main" class="text" aria-live="polite"></div>
+
+  <!-- 3) Video overlaps near end of typing -->
+  <div id="videoWrap" class="videoWrap">
+    <video id="loveVideo" playsinline webkit-playsinline muted loop autoplay preload="auto">
+      <source src="assets/love.webm" type="video/webm">
+    </video>
+    <div id="tapOverlay" class="tapOverlay">▶️ Chạm để phát</div>
+  </div>
+</div>
+
+<div class="controls">
+  <button class="btn" id="audioToggle" aria-pressed="false">🔊 Bật nhạc</button>
+</div>
+
+<audio id="lofi" loop preload="auto">
+  <source src="assets/lofi.mp3" type="audio/mpeg" />
+</audio>
+
+<script>
+// Accent color by hour
+(function(){
+  const h = new Date().getHours();
+  const acc = (h >= 7 && h < 18) ? '#49e4d9' : '#22c1b6';
+  document.documentElement.style.setProperty('--acc', acc);
+})();
+
+// Matrix rain (throttled)
+(function(){
+  const canvas = document.getElementById('matrix');
+  const ctx = canvas.getContext('2d');
+  let dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+  let fontSize = 14, cols, drops, width, height;
+  function resize(){
+    width=innerWidth; height=innerHeight;
+    canvas.width=Math.floor(width*dpr); canvas.height=Math.floor(height*dpr);
+    canvas.style.width=width+'px'; canvas.style.height=height+'px';
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    cols = Math.ceil(width / fontSize);
+    drops = new Array(cols).fill(1);
+    ctx.font = fontSize+'px monospace';
+  }
+  addEventListener('resize', resize, {passive:true}); resize();
+
+  let last=0; const fps=28; const interval=1000/fps;
+  function loop(ts){
+    const d = ts-last; if(d<interval) return requestAnimationFrame(loop);
+    last=ts;
+    ctx.fillStyle='rgba(0,0,0,.08)'; ctx.fillRect(0,0,width,height);
+    ctx.fillStyle=getComputedStyle(document.documentElement).getPropertyValue('--acc').trim()||'#49e4d9';
+    for(let i=0;i<drops.length;i++){
+      ctx.fillText(Math.random()<0.5?'0':'1', i*fontSize, drops[i]*fontSize);
+      if(drops[i]*fontSize>height && Math.random()>0.975) drops[i]=0;
+      drops[i]++;
+    }
+    requestAnimationFrame(loop);
+  }
+  document.addEventListener('visibilitychange', ()=>{ if(document.hidden) last=0; });
+  requestAnimationFrame(loop);
+})();
+
+// Prepare binary from content
+(function(){
+  const content = `Anh thích em!
+Tụi mình đừng vội đặt tên cho thứ này, cứ để mọi thứ chậm rãi mà thật nhé. 
+Anh tin, nếu hai tần số chạm nhau đủ đúng thì giống như mã nhị phân - một bật, một tắt, nhưng luôn song hành đến vô tận. 
+Anh không hứa gì xa đâu, chỉ muốn cùng em đi qua từng biến số nhỏ của cuộc đời, giống như cách những con số tìm thấy quy luật của riêng chúng. 
+Cô bé đặc biệt trong lòng anh, cảm ơn em vì đã tồn tại trong hệ phương trình của anh.`.trim();
+  const bytes = new TextEncoder().encode(content);
+  const bits = Array.from(bytes, b => b.toString(2).padStart(8,'0'));
+  const lineLen = 12; let out='';
+  for(let i=0;i<bits.length;i++){ out += bits[i] + ((i%lineLen===lineLen-1) ? '\n' : ' '); }
+  document.getElementById('binary').append(document.createTextNode(out));
+})();
+
+// Decode -> typewriter (overlap) -> video + audio handling
+(function(){
+  const decodeBtn = document.getElementById('decodeBtn');
+  const binEl = document.getElementById('binary');
+  const outEl = document.getElementById('main');
+  const videoWrap = document.getElementById('videoWrap');
+  const loveVideo = document.getElementById('loveVideo');
+  const tapOverlay = document.getElementById('tapOverlay');
+  const audio = document.getElementById('lofi');
+
+  function parseBinaryToBytes(txt){
+    const groups = txt.replace(/[^01\s]/g,' ').trim().split(/\s+/).filter(g=>g.length===8);
+    const arr = new Uint8Array(groups.length);
+    for(let i=0;i<groups.length;i++) arr[i] = parseInt(groups[i],2);
+    return arr;
+  }
+
+  async function safePlayVideo(){
+    try{
+      await loveVideo.play();
+      videoWrap.classList.remove('blocked');
+      return true;
+    }catch(e){
+      videoWrap.classList.add('blocked');
+      return false;
+    }
+  }
+
+  async function safeStartAudio(){
+    try{
+      audio.volume = 0.0;
+      await audio.play(); // user gesture: decode click
+      const start = performance.now();
+      function fade(ts){
+        const t = Math.min(1, (ts - start)/1000);
+        audio.volume = t;
+        if(t < 1) requestAnimationFrame(fade);
+      }
+      requestAnimationFrame(fade);
+    }catch(e){ /* user can toggle later */ }
+  }
+
+  function typewriter(text){
+    let i=0, speed=28;
+    const caret=document.createElement('span'); caret.className='typeCaret';
+    const overlapMs = 450;
+    const overlapChars = Math.max(8, Math.round(overlapMs / speed));
+    let videoShown = false;
+
+    function maybeShowVideo(){
+      if(!videoShown){
+        videoShown = true;
+        videoWrap.classList.add('show');
+        loveVideo.muted = true;
+        loveVideo.setAttribute('playsinline','');
+        loveVideo.setAttribute('webkit-playsinline','');
+        safePlayVideo();
+      }
+    }
+
+    function step(){
+      const remaining = text.length - i;
+      if(remaining <= overlapChars) maybeShowVideo();
+
+      if(i<text.length){
+        const ch=text[i++];
+        if(ch==='\n') outEl.insertAdjacentHTML('beforeend','<br>');
+        else outEl.insertAdjacentText('beforeend',ch);
+        if(!outEl.contains(caret)) outEl.appendChild(caret);
+        setTimeout(step, speed);
+      }else{
+        if(outEl.contains(caret)) caret.remove();
+        maybeShowVideo();
+      }
+    }
+    step();
+  }
+
+  decodeBtn.addEventListener('click', async ()=>{
+    try{
+      const bytes = parseBinaryToBytes(binEl.innerText);
+      const text = new TextDecoder('utf-8', {fatal:false}).decode(bytes);
+      outEl.innerHTML='';
+      typewriter(text);
+      decodeBtn.textContent='✅ Đã giải mã';
+      decodeBtn.disabled=true;
+
+      await safeStartAudio();
+
+      // Offer download
+      const blob = new Blob([text], {type:'text/plain;charset=utf-8'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = 'decoded_message.txt';
+      a.textContent = '⬇️ Tải .txt';
+      a.className = 'btn small';
+      a.id = 'downloadTxt';
+      decodeBtn.insertAdjacentElement('afterend', a);
+    }catch(e){
+      decodeBtn.textContent='⚠️ Lỗi giải mã';
+      setTimeout(()=> decodeBtn.textContent='🔓 Giải mã', 1600);
+    }
+  }, {passive:true});
+
+  // Overlay tap to start video if autoplay blocked
+  tapOverlay.addEventListener('click', async ()=>{
+    await safePlayVideo();
+  }, {passive:true});
+
+  // Audio toggle
+  const audioToggle = document.getElementById('audioToggle');
+  let playing=false;
+  audioToggle.addEventListener('click', async ()=>{
+    try{
+      if(audio.paused){ await audio.play(); playing=true; audioToggle.textContent='⏸️ Tắt nhạc'; }
+      else { audio.pause(); playing=false; audioToggle.textContent='🔊 Bật nhạc'; }
+    }catch(e){ audioToggle.textContent='⚠️ Không phát được'; setTimeout(()=> audioToggle.textContent= playing? '⏸️ Tắt nhạc':'🔊 Bật nhạc', 1500); }
+  }, {passive:true});
+})();
+</script>
+
+</body>
+</html>
