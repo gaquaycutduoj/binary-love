@@ -66,15 +66,6 @@
 
   <div class="actions">
     <button class="btn" id="decodeBtn">🔓 Giải mã</button>
-  </div>
-  document.getElementById('decodeBtn').addEventListener('click', async () => {
-  const audio = document.getElementById('lofi');
-  try {
-    await audio.play();
-  } catch(e) {
-    console.log('Safari từ chối autoplay, chờ user tap thêm lần nữa');
-  }
-});
     <button class="btn small" id="copyBin">📋 Copy Binary</button>
     <span class="links">Decode quickly at:
       <a href="https://onlinetexttools.com/convert-binary-to-text" target="_blank" rel="noopener">Onlinetexttools</a> ·
