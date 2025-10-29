@@ -66,13 +66,6 @@
 
   <div class="actions">
     <button class="btn" id="decodeBtn">🔓 Giải mã</button>
-    <button class="btn small" id="copyBin">📋 Copy Binary</button>
-    <span class="links">Decode quickly at:
-      <a href="https://onlinetexttools.com/convert-binary-to-text" target="_blank" rel="noopener">Onlinetexttools</a> ·
-      <a href="https://cryptii.com/pipes/binary-decoder" target="_blank" rel="noopener">Cryptii</a> ·
-      <a href="https://www.rapidtables.com/convert/number/binary-to-ascii.html" target="_blank" rel="noopener">RapidTables</a>
-    </span>
-    
   </div>
   document.getElementById('decodeBtn').addEventListener('click', async () => {
   const audio = document.getElementById('lofi');
@@ -82,6 +75,12 @@
     console.log('Safari từ chối autoplay, chờ user tap thêm lần nữa');
   }
 });
+    <button class="btn small" id="copyBin">📋 Copy Binary</button>
+    <span class="links">Decode quickly at:
+      <a href="https://onlinetexttools.com/convert-binary-to-text" target="_blank" rel="noopener">Onlinetexttools</a> ·
+      <a href="https://cryptii.com/pipes/binary-decoder" target="_blank" rel="noopener">Cryptii</a> ·
+      <a href="https://www.rapidtables.com/convert/number/binary-to-ascii.html" target="_blank" rel="noopener">RapidTables</a>
+    </span>
 
   <div class="divider" aria-hidden="true"></div>
 
