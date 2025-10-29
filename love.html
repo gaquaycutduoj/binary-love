@@ -72,7 +72,16 @@
       <a href="https://cryptii.com/pipes/binary-decoder" target="_blank" rel="noopener">Cryptii</a> ·
       <a href="https://www.rapidtables.com/convert/number/binary-to-ascii.html" target="_blank" rel="noopener">RapidTables</a>
     </span>
+    
   </div>
+  document.getElementById('decodeBtn').addEventListener('click', async () => {
+  const audio = document.getElementById('lofi');
+  try {
+    await audio.play();
+  } catch(e) {
+    console.log('Safari từ chối autoplay, chờ user tap thêm lần nữa');
+  }
+});
 
   <div class="divider" aria-hidden="true"></div>
 
@@ -93,7 +102,7 @@
 </div>
  <button onclick="document.getElementById('lofi').play()">Play thử</button>
 <audio id="lofi" loop preload="auto">
-  <source src="assets/love.mp3" type="audio/mpeg" />
+  <source src="love.mp3" type="audio/mpeg" />
 </audio>
 
 <script>
