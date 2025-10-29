@@ -91,8 +91,15 @@
 <div class="controls">
   <button class="btn" id="audioToggle" aria-pressed="false">🔊 Bật nhạc</button>
 </div>
-
-<audio id="lofi" loop preload="auto">
+  <button class="btn small" id="forcePlay">▶️ Phát nhạc</button>
+<script>
+  document.getElementById('forcePlay').addEventListener('click', async ()=>{
+    const a=document.getElementById('lofi');
+    try{ await a.play(); }catch(e){}
+  }, {passive:true});
+</script>
+  
+<audio id="love" loop preload="auto">
   <source src="love.mp3" type="audio/mpeg" />
 </audio>
 
