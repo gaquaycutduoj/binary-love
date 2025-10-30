@@ -275,6 +275,47 @@ Em copy đường link web rồi mở trên trình duyệt laptop nha <3`.trim()
   }, {passive:true});
 })();
 </script>
+<script>
+// Copy Binary
+(function(){
+  const copyBtn = document.getElementById('copyBin');
+  const binEl   = document.getElementById('binary');
 
+  async function copyText(txt){
+    // Ưu tiên Clipboard API (https + user gesture)
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(txt);
+      return true;
+    }
+    // Fallback: textarea ẩn + execCommand
+    const ta = document.createElement('textarea');
+    ta.value = txt;
+    ta.setAttribute('readonly','');
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    try{ const ok = document.execCommand('copy'); document.body.removeChild(ta); return ok; }
+    catch(e){ document.body.removeChild(ta); return false; }
+  }
+
+  copyBtn.addEventListener('click', async ()=>{
+    const raw = binEl.innerText || binEl.textContent || '';
+    if(!raw.trim()){
+      copyBtn.textContent = '⚠️ Không có dữ liệu';
+      setTimeout(()=> copyBtn.textContent='📋 Copy Binary', 1400);
+      return;
+    }
+    try{
+      const ok = await copyText(raw);
+      copyBtn.textContent = ok ? '✅ Đã copy' : '⚠️ Copy thất bại';
+    }catch(e){
+      copyBtn.textContent = '⚠️ Copy lỗi';
+    }finally{
+      setTimeout(()=> copyBtn.textContent='📋 Copy Binary', 1200);
+    }
+  }, {passive:true});
+})();
+</script>
 </body>
 </html>
